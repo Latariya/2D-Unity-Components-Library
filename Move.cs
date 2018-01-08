@@ -5,14 +5,21 @@
 public class Move : MonoBehaviour
 {
     [SerializeField] private MoveAxis moveAxis;
+
     [SerializeField] private float moveSpeed;
     [SerializeField] private float jumpValue;
+
+    [SerializeField] private bool multipleJumps;
+    [SerializeField] private int multipleJumpsCount;
+
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private Transform groundCheckers;
 
     private bool onGround;
     private Rigidbody2D rb;
+
     private float initialGravity;
+    private int jumpCounter;
 
     private void Start()
     {
@@ -61,18 +68,29 @@ public class Move : MonoBehaviour
     {
         foreach (Transform item in groundCheckers)
         {
-            onGround = Physics2D.OverlapCircle(item.position, .1f, groundLayer);
+            onGround = Physics2D.OverlapCircle(item.position, .03f, groundLayer);
             if (onGround) return;
         }
-
     }
 
     private void JumpProcess()
     {
         bool isSpacePressed = Input.GetKeyDown(KeyCode.Space);
         bool canJump = isSpacePressed && onGround;
+        bool canMultipleJumps = multipleJumps && jumpCounter < multipleJumpsCount && !onGround && isSpacePressed;
         Vector2 jumpVector = GetJumpVector();
-        if (canJump) rb.AddForce(jumpVector);
+
+        if (canJump || canMultipleJumps)
+        {
+            jumpCounter++;
+            rb.velocity = Vector2.right * rb.velocity.x;
+            rb.AddForce(jumpVector);
+        }   
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground")) jumpCounter = 0;
     }
 
     private Vector2 GetJumpVector ()
